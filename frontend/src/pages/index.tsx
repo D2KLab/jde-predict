@@ -326,7 +326,7 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  <hr className="mb-6" />
+                  <hr className="my-6" />
                   <article className="prose lg:prose-xl max-w-none">
                     <h1 className="mb-4 lg:mb-4">
                       {result.article.title[0].value}
