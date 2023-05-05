@@ -5,6 +5,13 @@ import { allowedMethods } from './api/predict'
 
 import styles from './index.module.css'
 
+const methodsNames: { [key: string]: string } = {
+  bert: 'BERT (Supervisé)',
+  'claude-v1': 'Claude',
+  'gpt-4': 'GPT-4',
+  zeste: 'ZeSTE',
+}
+
 const generateLoadingLines = () => {
   const loadingLines = []
   function randomValue() {
@@ -127,6 +134,15 @@ export default function Home() {
             [method]: res,
           }))
         })
+        .catch(() => {
+          setPredictions((predictions: any) => ({
+            ...predictions,
+            [method]: {
+              method,
+              error: 'An error occured while fetching the predictions.',
+            },
+          }))
+        })
     }
   }
 
@@ -143,6 +159,25 @@ export default function Home() {
       Object.keys(predictions).length !== allowedMethods.length
     )
   }, [predictions])
+
+  const renderPredictionLabels = (pred: any) => {
+    if (pred.error) {
+      return <>{pred.error}</>
+    }
+    if (pred.labels.length === 0) {
+      return <>No predictions</>
+    }
+    return pred.labels.map((label: string, i: number) => (
+      <span
+        key={label}
+        className={`px-4 py-2 font-semibold text-sm ${
+          methodsColors[pred.method]
+        } text-white rounded-full shadow-sm`}
+      >
+        {label} <sup>({pred.scores[i].toFixed(2)})</sup>
+      </span>
+    ))
+  }
 
   return (
     <div className={lato.className}>
@@ -241,35 +276,25 @@ export default function Home() {
               {result && (
                 <>
                   <div className="flex flex-wrap gap-4">
-                    {predictions &&
-                      Object.values(predictions).map((pred: any) => {
-                        return (
-                          <div className="mb-8 flex flex-col" key={pred.method}>
-                            <div>
-                              <span className="font-semibold uppercase ml-2">
-                                {pred.method}
-                              </span>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              {pred.labels.length === 0 ? (
-                                <>No predictions</>
-                              ) : (
-                                pred.labels.map((label: string, i: number) => (
-                                  <span
-                                    key={label}
-                                    className={`px-4 py-2 font-semibold text-sm ${
-                                      methodsColors[pred.method]
-                                    } text-white rounded-full shadow-sm`}
-                                  >
-                                    {label}{' '}
-                                    <sup>({pred.scores[i].toFixed(2)})</sup>
-                                  </span>
-                                ))
-                              )}
-                            </div>
+                    {allowedMethods.map((method) => {
+                      // Check if predictions has method as a key
+                      if (!predictions[method]) {
+                        return undefined
+                      }
+                      const pred = predictions[method]
+                      return (
+                        <div className="flex flex-col" key={method}>
+                          <div>
+                            <span className="font-semibold">
+                              {methodsNames[pred.method]}
+                            </span>
                           </div>
-                        )
-                      })}
+                          <div className="flex flex-col gap-2">
+                            {renderPredictionLabels(pred)}
+                          </div>
+                        </div>
+                      )
+                    })}
                     {loadingPredictions && (
                       <div
                         className="mb-8"

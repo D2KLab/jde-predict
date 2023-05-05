@@ -8,7 +8,7 @@ export type PredictionResult = {
   scores: number[]
 }
 
-export const allowedMethods = ['bert', 'claude-v1', 'gpt-4', 'zeste']
+export const allowedMethods = ['bert', 'gpt-4', 'claude-v1', 'zeste']
 
 export default async function handler(
   req: NextApiRequest,
