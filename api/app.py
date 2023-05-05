@@ -1,0 +1,195 @@
+from flask import Flask
+from flask_restx import Resource, Api, fields, reqparse
+import requests
+import anthropic
+from dotenv import load_dotenv
+import re
+import os
+import openai
+
+
+load_dotenv()
+
+jde_classes = ["Rachat / Cession", "Levée de fonds", "Nouvelle implantation", "Changement de Dirigeant", "Procédure de sauvegarde", "Fermeture de site", "Création d’emploi / recrutement", "Extension géographique", "Investissement.1", "Nouvelle activité / produit", "Projet d’acquisition"]
+zeste_config = {
+    'classes': ['rachat', 'bienfaisance', 'implantation', 'passation', 'banqueroute', 'fermeture', 'recrutement', 'territoire', 'investissement', 'innovation', 'acquisition'],
+    'threshold': 0.11, # float or None
+    'topk': 3, # int or None
+}
+
+app = Flask(__name__)
+api = Api(app)
+
+PredictRequest = reqparse.RequestParser()
+PredictRequest.add_argument('method', choices=['bert', 'claude-v1', 'gpt-4', 'zeste'], required=True)
+PredictRequest.add_argument('text', type=str, location='form')
+
+Prediction = api.model('Prediction', {
+    'label': fields.String,
+    'score': fields.Float,
+})
+
+PredictResponse = api.model('PredictResponse', {
+    'predictions': fields.List(fields.Nested(Prediction)),
+})
+
+def get_zeste_predictions(text):
+    assert(len(zeste_config['classes']) == len(jde_classes))
+    res = requests.post('https://zeste.tools.eurecom.fr/api/predict',
+        headers={
+            'accept': 'application/json',
+        },
+        json={
+            "labels": ["rachat", "bienfaisance", "implantation", "passation", "banqueroute", "fermeture", "recrutement", "territoire", "investissement", "innovation", "acquisition"],
+            "language": "fr",
+            "text": text,
+            "explain": False,
+            "highlights": False
+        }
+    )
+    json = res.json()
+    predictions = []
+    for i, result in enumerate(json['results']):
+        # Check if i if above topk
+        if zeste_config['topk'] is not None and i >= zeste_config['topk']:
+            break
+        # Check if result['score'] is above threshold
+        if zeste_config['threshold'] is not None and result['score'] < zeste_config['threshold']:
+            continue
+        # Get index of class from zeste_classes based on result['label']
+        index = zeste_config['classes'].index(result['label'])
+        # Get corresponding class from jde_classes
+        jde_class = jde_classes[index]
+        predictions.append({
+            'label': jde_class,
+            'score': result['score']
+        })
+    return predictions
+
+
+def get_claude_predictions(text):
+    claude_classes = [
+        'Rachat / Cession',
+        'Levée de fonds',
+        'Nouvelle implantation',
+        'Changement de Dirigeant',
+        'Procédure de sauvegarde',
+        'Fermeture de site',
+        "Création d'emploi / recrutement",
+        'Extension géographique',
+        'Investissement',
+        'Nouvelle activité / produit',
+        "Projet d'acquisition"
+    ]
+    assert(len(jde_classes) == len(claude_classes))
+    prompt_classes = '\n'.join([f'{i+1}. {x}' for i, x in enumerate(claude_classes)])
+
+    CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')
+    client = anthropic.Client(CLAUDE_API_KEY)
+
+    text = text.replace('\n', ' ')[0:28000-500]
+    prompt=f"""{anthropic.HUMAN_PROMPT}Human: Texte à classifier: {text}.
+Veuillez retourner jusqu'à 3 numéros de catégories séparés par une virgule, parmi les options suivantes, uniquement si explicitement décrites.
+{prompt_classes}
+Choix:{anthropic.AI_PROMPT}"""
+    resp = client.completion(
+        prompt=prompt,
+        stop_sequences=[anthropic.HUMAN_PROMPT],
+        model="claude-v1.3",
+        max_tokens_to_sample=8,
+    )
+    predictions = []
+    numbers = re.findall(r'\d+', resp['completion'])
+    numbers_list = [int(num) for num in numbers]
+    for num in numbers_list:
+        if num >= 1 and num <= len(jde_classes):
+            predictions.append({
+                'label': jde_classes[num - 1],
+                'score': 1.0
+            })
+    return predictions
+
+
+def get_gpt_predictions(text):
+    gpt_classes = [
+        "Rachat / Cession",
+        "Levée de fonds",
+        "Nouvelle implantation",
+        "Changement de Dirigeant",
+        "Procédure de sauvegarde",
+        "Fermeture de site",
+        "Création d'emploi / recrutement",
+        "Extension géographique",
+        "Investissement",
+        "Nouvelle activité / produit",
+        "Projet d'acquisition"
+    ]
+    assert(len(jde_classes) == len(gpt_classes))
+    prompt_classes = '\n'.join([f'{i+1}. {x}' for i, x in enumerate(gpt_classes)])
+
+    openai.api_key = os.getenv('OPENAI_API_KEY')
+
+    text = text.replace('\n', ' ')[0:8000-500]
+    prompt=f"""Texte à classifier: {text}.
+Veuillez retourner jusqu'à 3 numéros de catégories séparés par une virgule, parmi les options suivantes, uniquement si explicitement décrites.
+{prompt_classes}
+Choix:"""
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            { "role": "user", "content": prompt },
+        ]
+    )
+
+    predictions = []
+    numbers = re.findall(r'\d+', response['choices'][0]['message']['content'])
+    numbers_list = [int(num) for num in numbers]
+    for num in numbers_list:
+        if num >= 1 and num <= len(jde_classes):
+            predictions.append({
+                'label': jde_classes[num - 1],
+                'score': 1.0
+            })
+
+    return predictions
+
+
+def get_bert_predictions(text):
+    res = requests.post(os.getenv('BERT_API_URL') + '/api/predict',
+        headers={
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
+        },
+        data={
+            "text": text,
+        }
+    )
+    predictions = res.json()
+    return predictions
+
+
+@api.route('/predict')
+class Predict(Resource):
+    @api.expect(PredictRequest)
+    @api.marshal_with(PredictResponse)
+    @api.response(200, 'Success')
+    @api.response(501, 'Prediction method not implemented')
+    def post(self):
+        args = PredictRequest.parse_args()
+        method = args['method']
+        text = args['text']
+        if method == 'zeste':
+            predictions = get_zeste_predictions(text)
+        elif method == 'claude-v1':
+            predictions = get_claude_predictions(text)
+        elif method == 'gpt-4':
+            predictions = get_gpt_predictions(text)
+        elif method == 'bert':
+            predictions = get_bert_predictions(text)
+        else:
+            return 'Prediction method not implemented', 501
+        return { 'predictions': predictions }
+
+if __name__ == '__main__':
+    app.run(debug=True)

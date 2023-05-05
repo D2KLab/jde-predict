@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  color: #000;
+  background: #fff;
+}
+
+br {
+  display: block;
+  content: "";
+  margin: 1rem 0;
+}
