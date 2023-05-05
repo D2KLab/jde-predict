@@ -5,7 +5,19 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 
 
-jde_classes = ["Rachat / Cession", "Levée de fonds", "Nouvelle implantation", "Changement de Dirigeant", "Procédure de sauvegarde", "Fermeture de site", "Création d’emploi / recrutement", "Extension géographique", "Investissement.1", "Nouvelle activité / produit", "Projet d’acquisition"]
+jde_classes = [
+    "Rachat / Cession",
+    "Levée de fonds",
+    "Nouvelle implantation",
+    "Changement de Dirigeant",
+    "Procédure de sauvegarde",
+    "Fermeture de site",
+    "Création d’emploi / recrutement",
+    "Extension géographique",
+    "Investissement",
+    "Nouvelle activité / produit",
+    "Projet d’acquisition"
+]
 
 bert_tokenizer_name = 'bert-base-multilingual-cased'
 print(f'Loading tokenizer {bert_tokenizer_name}')

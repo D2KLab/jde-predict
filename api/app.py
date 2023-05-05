@@ -10,7 +10,19 @@ import openai
 
 load_dotenv()
 
-jde_classes = ["Rachat / Cession", "Levée de fonds", "Nouvelle implantation", "Changement de Dirigeant", "Procédure de sauvegarde", "Fermeture de site", "Création d’emploi / recrutement", "Extension géographique", "Investissement.1", "Nouvelle activité / produit", "Projet d’acquisition"]
+jde_classes = [
+    "Rachat / Cession",
+    "Levée de fonds",
+    "Nouvelle implantation",
+    "Changement de Dirigeant",
+    "Procédure de sauvegarde",
+    "Fermeture de site",
+    "Création d’emploi / recrutement",
+    "Extension géographique",
+    "Investissement",
+    "Nouvelle activité / produit",
+    "Projet d’acquisition"
+]
 zeste_config = {
     'classes': ['rachat', 'bienfaisance', 'implantation', 'passation', 'banqueroute', 'fermeture', 'recrutement', 'territoire', 'investissement', 'innovation', 'acquisition'],
     'threshold': 0.11, # float or None
