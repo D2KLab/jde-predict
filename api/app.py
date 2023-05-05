@@ -165,8 +165,8 @@ def get_bert_predictions(text):
             "text": text,
         }
     )
-    predictions = res.json()
-    return predictions
+    data = res.json()
+    return data['predictions']
 
 
 @api.route('/status')
