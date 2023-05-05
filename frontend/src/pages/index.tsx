@@ -125,7 +125,7 @@ export default function Home() {
     }
   }
 
-  const date = new Date(result?.article?.created[0].value)
+  const date = new Date(result?.article?.created?.[0].value)
     .toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'long',
@@ -295,17 +295,17 @@ export default function Home() {
                     <h1 className="mb-4 lg:mb-4">
                       {result.article.title[0].value}
                     </h1>
-                    {result.article.field_auteur_libre && (
+                    {result.article.field_auteur_libre?.[0] && (
                       <div className="mb-8 text-slate-500">
                         Par {result.article.field_auteur_libre[0].value}
                         {result.article.created && <>, le {date}</>}
                       </div>
                     )}
-                    {!result.article.field_auteur_libre &&
-                      result.article.created && (
+                    {!result.article.field_auteur_libre?.[0] &&
+                      result.article.created?.[0] && (
                         <div className="mb-8 text-slate-500">{date}</div>
                       )}
-                    {result.article.field_abstract && (
+                    {result.article.field_abstract?.[0] && (
                       <div
                         dangerouslySetInnerHTML={{
                           __html: result.article.field_abstract[0].value,
@@ -314,7 +314,7 @@ export default function Home() {
                     )}
                     <div
                       dangerouslySetInnerHTML={{
-                        __html: result.article.body[0].value,
+                        __html: result.article.body?.[0].value,
                       }}
                     ></div>
                   </article>
