@@ -84,6 +84,11 @@ export default function Home() {
 
   const onSubmit = async (ev: React.FormEvent<HTMLFormElement>) => {
     ev.preventDefault()
+    predict(url)
+  }
+
+  const predict = async (url: string) => {
+    setUrl(url)
     setIsLoading(true)
     setResult(null)
     setPredictions({})
@@ -142,11 +147,17 @@ export default function Home() {
   return (
     <div className={lato.className}>
       <header className={`${styles.header}`}>
-        <div className={styles.menu}>
+        <div
+          className={styles.menu}
+          onClick={() => {
+            setResult(undefined)
+            setUrl('')
+          }}
+        >
           <span className={styles.menu_button}>
             <span></span>
           </span>
-          <span className={`${styles.menu_title}`}>Menu</span>
+          <span className={`hidden md:inline ${styles.menu_title}`}>Menu</span>
         </div>
         <div className={styles.header_logo}>
           <img
@@ -158,7 +169,7 @@ export default function Home() {
         <div className={styles.header_buttons}>
           <div className={styles.user_button}>
             <div className={styles.user_button_avatar}></div>
-            <span>Anne-Sophie Hervé</span>
+            <span className="hidden md:inline">Anne-Sophie Hervé</span>
           </div>
         </div>
       </header>
@@ -324,14 +335,18 @@ export default function Home() {
           </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center">
-            <form method="post" className={styles.form} onSubmit={onSubmit}>
-              <div>
-                <label
-                  htmlFor="first_name"
-                  className="block mb-2 text-xl font-medium text-gray-900"
-                >
-                  URL de l&apos;article du Journal des Entreprises :
-                </label>
+            <form
+              method="post"
+              className="w-3/4 flex flex-col"
+              onSubmit={onSubmit}
+            >
+              <label
+                htmlFor="first_name"
+                className="block mb-2 text-xl font-medium text-gray-900"
+              >
+                URL de l&apos;article du Journal des Entreprises :
+              </label>
+              <div className="flex items-center">
                 <input
                   type="url"
                   name="url"
@@ -342,37 +357,126 @@ export default function Home() {
                   required
                   disabled={isLoading}
                 ></input>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="ml-3 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none inline-flex items-center font-semibold leading-6 shadow text-white bg-red-500 hover:bg-red-400 active:bg-red-600"
+                >
+                  {isLoading && (
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                  )}
+                  Predict
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="ml-auto mt-3 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none inline-flex items-center font-semibold leading-6 shadow text-white bg-indigo-500 hover:bg-indigo-400"
-              >
-                {isLoading && (
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                )}
-                Predict
-              </button>
             </form>
+            <div className="flex flex-col w-3/4 ml-6 mt-4 text-gray-500">
+              <div className="mb-2">Ou essayer avec un exemple :</div>
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div
+                  className="max-w-sm rounded overflow-hidden shadow-lg cursor-pointer"
+                  onClick={() => {
+                    predict(
+                      'https://www.lejournaldesentreprises.com/hauts-de-france/breve/le-groupe-socomore-rachete-mader-aero-204794'
+                    )
+                  }}
+                >
+                  <div className="px-6 py-4">
+                    <div className="font-bold text-gray-700 text-xl truncate">
+                      Le groupe Socomore rachète Mäder Aero
+                    </div>
+                    <p className="text-gray-600 text-sm mb-2">30 avril 2019</p>
+                    <p className="text-gray-700 text-base">
+                      Le groupe breton Socomore (CA 2018 : 65 M€) a finalisé
+                      l&apos;acquisition de 100 % de Mäder Aero, l&apos;activité
+                      aéronautique et défense du groupe…
+                    </p>
+                  </div>
+                </div>
+                <div
+                  className="max-w-sm rounded overflow-hidden shadow-lg cursor-pointer"
+                  onClick={() => {
+                    predict(
+                      'https://www.lejournaldesentreprises.com/auvergne-rhone-alpes/breve/la-region-aura-alloue-plus-de-40-millions-deuros-de-credits-europeens-2060546'
+                    )
+                  }}
+                >
+                  <div className="px-6 py-4">
+                    <div className="font-bold text-gray-700 text-xl truncate">
+                      La région AURA alloue plus de 40 millions d’euros de
+                      crédits européens
+                    </div>
+                    <p className="text-gray-600 text-sm mb-2">05 mai 2023</p>
+                    <p className="text-gray-700 text-base">
+                      La région Auvergne-Rhône-Alpes qui gère plus de 1,5
+                      milliard d’euros de crédits européens pour les 5
+                      prochaines années a attribué le…
+                    </p>
+                  </div>
+                </div>
+                <div
+                  className="max-w-sm rounded overflow-hidden shadow-lg cursor-pointer"
+                  onClick={() => {
+                    predict(
+                      'https://www.lejournaldesentreprises.com/ille-et-vilaine/breve/le-roy-logistique-agrandit-sa-surface-logistique-en-gironde-2060446'
+                    )
+                  }}
+                >
+                  <div className="px-6 py-4">
+                    <div className="font-bold text-gray-700 text-xl truncate">
+                      Le Roy Logistique agrandit sa surface logistique en
+                      Gironde
+                    </div>
+                    <p className="text-gray-600 text-sm mb-2">04 mai 2023</p>
+                    <p className="text-gray-700 text-base">
+                      La société Le Roy Logistique, spécialisée dans la
+                      logistique du transport (viticole, agroalimentaire, BTP ou
+                      e-commerce) dont le siège est implanté à…
+                    </p>
+                  </div>
+                </div>
+                <div
+                  className="max-w-sm rounded overflow-hidden shadow-lg cursor-pointer"
+                  onClick={() => {
+                    predict(
+                      'https://www.lejournaldesentreprises.com/region-sud/breve/david-gesbert-est-le-nouveau-directeur-deurecom-1763860'
+                    )
+                  }}
+                >
+                  <div className="px-6 py-4">
+                    <div className="font-bold text-gray-700 text-xl truncate">
+                      David Gesbert est le nouveau directeur d'Eurecom
+                    </div>
+                    <p className="text-gray-600 text-sm mb-2">
+                      05 janvier 2022
+                    </p>
+                    <p className="text-gray-700 text-base">
+                      David Gesbert a été nommé directeur d’Eurecom, en
+                      remplacement d’Ulrich Finger qui prend sa retraite après
+                      avoir occupé ce poste pendant plus de vingt…
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>
