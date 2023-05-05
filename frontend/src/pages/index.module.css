@@ -1,9 +1,5 @@
 .main {
-  height: calc(100vh - 60px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow: auto;
+  min-height: calc(100vh - 60px);
 }
 
 .menu {
@@ -76,18 +72,11 @@
 .header {
   background-color: rgb(40, 40, 40);
   color: #fff;
-  overflow: visible;
-  border-radius: 0px;
-  opacity: 1;
   align-self: flex-start;
   align-items: center;
   display: flex;
-  min-width: 280px;
   height: 60px;
-  flex-grow: 0;
-  flex-shrink: 0;
-  width: calc(100% - 0px);
-  margin: 0px;
+  width: 100%;
 }
 
 .header_title {

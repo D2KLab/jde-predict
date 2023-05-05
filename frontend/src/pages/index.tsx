@@ -146,7 +146,7 @@ export default function Home() {
 
   return (
     <div className={lato.className}>
-      <header className={`${styles.header}`}>
+      <header className={`sticky top-0 z-50 ${styles.header}`}>
         <div
           className={styles.menu}
           onClick={() => {
@@ -173,7 +173,7 @@ export default function Home() {
           </div>
         </div>
       </header>
-      <main className={styles.main}>
+      <main className={`relative flex items-center ${styles.main}`}>
         {result !== undefined ? (
           <div className="w-full flex flex-col items-center pt-10">
             <form method="post" className="w-9/12" onSubmit={onSubmit}>
@@ -334,7 +334,7 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center">
+          <div className="w-full flex flex-col items-center justify-center py-8">
             <form
               method="post"
               className="w-3/4 flex flex-col"
