@@ -463,7 +463,7 @@ export default function Home() {
                 >
                   <div className="px-6 py-4">
                     <div className="font-bold text-gray-700 text-xl truncate">
-                      David Gesbert est le nouveau directeur d'Eurecom
+                      David Gesbert est le nouveau directeur d&apos;Eurecom
                     </div>
                     <p className="text-gray-600 text-sm mb-2">
                       05 janvier 2022
