@@ -7,7 +7,7 @@ import styles from './index.module.css'
 
 const methodsNames: { [key: string]: string } = {
   bert: 'BERT (Supervisé)',
-  'claude-v1': 'Claude',
+  'claude-v1': 'Claude-v1',
   'gpt-4': 'GPT-4',
   zeste: 'ZeSTE',
 }
