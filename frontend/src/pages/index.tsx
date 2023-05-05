@@ -1,5 +1,5 @@
 import { Lato } from 'next/font/google'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ArticleResult } from './api/article'
 import { allowedMethods } from './api/predict'
 
@@ -83,7 +83,6 @@ const methodsColors: { [key: string]: string } = {
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
-  const [loadingPredictions, setLoadingPredictions] = useState(false)
   const [result, setResult] = useState<ArticleResult | null>()
   const [predictions, setPredictions] = useState<any>({})
   const [url, setUrl] = useState('')
@@ -118,6 +117,13 @@ export default function Home() {
 
     setResult(resArticle)
     setIsLoading(false)
+
+    setPredictions(
+      allowedMethods.reduce((acc: any, method: string) => {
+        acc[method] = { loading: true }
+        return acc
+      }, {})
+    )
 
     for (const method of allowedMethods) {
       fetch('/api/predict', {
@@ -154,13 +160,31 @@ export default function Home() {
     })
     .toLocaleLowerCase()
 
-  useEffect(() => {
-    setLoadingPredictions(
-      Object.keys(predictions).length !== allowedMethods.length
-    )
-  }, [predictions])
-
   const renderPredictionLabels = (pred: any) => {
+    if (pred.loading) {
+      return (
+        <div style={{ flex: 1, minWidth: 250, maxWidth: 350 }}>
+          <div className="animate-pulse">
+            <div className="space-y-6 py-1">
+              <div className="grid gap-2">
+                <div
+                  className="bg-slate-700 rounded-full col-span-1"
+                  style={{ height: 36 }}
+                ></div>
+                <div
+                  className="bg-slate-700 rounded-full col-span-1"
+                  style={{ height: 36 }}
+                ></div>
+                <div
+                  className="bg-slate-700 rounded-full col-span-1"
+                  style={{ height: 36 }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
     if (pred.error) {
       return <>{pred.error}</>
     }
@@ -286,7 +310,7 @@ export default function Home() {
                         <div className="flex flex-col" key={method}>
                           <div>
                             <span className="font-semibold">
-                              {methodsNames[pred.method]}
+                              {methodsNames[method]}
                             </span>
                           </div>
                           <div className="flex flex-col gap-2">
@@ -295,36 +319,6 @@ export default function Home() {
                         </div>
                       )
                     })}
-                    {loadingPredictions && (
-                      <div
-                        className="mb-8"
-                        style={{ flex: 1, minWidth: 150, maxWidth: 300 }}
-                      >
-                        <div className="animate-pulse">
-                          <div className="space-y-6 py-1">
-                            <div className="space-y-3">
-                              <div className="grid gap-2">
-                                <div className="h-2 bg-slate-700 rounded col-span-1"></div>
-                              </div>
-                              <div className="grid gap-2">
-                                <div
-                                  className="bg-slate-700 rounded-full col-span-1"
-                                  style={{ height: 36 }}
-                                ></div>
-                                <div
-                                  className="bg-slate-700 rounded-full col-span-1"
-                                  style={{ height: 36 }}
-                                ></div>
-                                <div
-                                  className="bg-slate-700 rounded-full col-span-1"
-                                  style={{ height: 36 }}
-                                ></div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                   <hr className="my-6" />
                   <article className="prose lg:prose-xl max-w-none">
