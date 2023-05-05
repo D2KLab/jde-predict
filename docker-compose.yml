@@ -2,15 +2,11 @@ version: "3.3"
 services:
   api:
     build: ./api
-    ports:
-      - "8000:8000"
   bert-server:
     build: ./bert-server
-    ports:
-      - "9000:8000"
     volumes:
       - ./bert-server/bert-models:/app/bert-models
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "5811:3000"
