@@ -156,7 +156,7 @@ Choix:"""
 
 
 def get_bert_predictions(text):
-    res = requests.post(os.getenv('BERT_API_URL') + '/api/predict',
+    res = requests.post(os.getenv('BERT_API_URL') + '/predict',
         headers={
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/json',
