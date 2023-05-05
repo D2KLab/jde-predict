@@ -169,6 +169,13 @@ def get_bert_predictions(text):
     return predictions
 
 
+@api.route('/status')
+class Status(Resource):
+    @api.response(200, 'Success')
+    def get(self):
+        return 'OK'
+
+
 @api.route('/predict')
 class Predict(Resource):
     @api.expect(PredictRequest)
