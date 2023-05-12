@@ -6,9 +6,14 @@ from dotenv import load_dotenv
 import re
 import os
 import openai
+import spacy
+from spacy import displacy
+from spacy.cli import download
 
 
 load_dotenv()
+
+nlp = spacy.load('fr_core_news_lg')
 
 jde_classes = [
     "Rachat / Cession",
@@ -35,14 +40,23 @@ api = Api(app)
 PredictRequest = reqparse.RequestParser()
 PredictRequest.add_argument('method', choices=['bert', 'claude-v1', 'gpt-4', 'zeste'], required=True)
 PredictRequest.add_argument('text', type=str, location='form')
-
 Prediction = api.model('Prediction', {
     'label': fields.String,
     'score': fields.Float,
 })
-
 PredictResponse = api.model('PredictResponse', {
     'predictions': fields.List(fields.Nested(Prediction)),
+})
+
+EntitiesRequest = reqparse.RequestParser()
+EntitiesRequest.add_argument('text', type=str, location='form')
+NamedEntity = api.model('NamedEntity', {
+    'label': fields.String,
+    'type': fields.String,
+})
+EntitiesResponse = api.model('EntitiesResponse', {
+    'html': fields.String,
+    'entities': fields.List(fields.Nested(NamedEntity)),
 })
 
 def get_zeste_predictions(text):
@@ -209,6 +223,21 @@ class Predict(Resource):
         else:
             return 'Prediction method not implemented', 501
         return { 'predictions': predictions }
+
+
+@api.route('/entities')
+class Predict(Resource):
+    @api.expect(EntitiesRequest)
+    @api.marshal_with(EntitiesResponse)
+    @api.response(200, 'Success')
+    def post(self):
+        args = EntitiesRequest.parse_args()
+        text = args['text']
+        doc = nlp(text)
+        html = displacy.render(doc, style='ent', page=False, jupyter=False, options={'ents': ['ORG', 'LOC', 'PER']})
+        html = html.replace('</br>', ' ')
+        return { 'html': html, 'entities': [] }
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')

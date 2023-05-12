@@ -87,6 +87,7 @@ export default function Home() {
   const [predictions, setPredictions] = useState<any>({})
   const [url, setUrl] = useState('')
   const [error, setError] = useState(null)
+  const [html, setHtml] = useState(false)
 
   const onSubmit = async (ev: React.FormEvent<HTMLFormElement>) => {
     ev.preventDefault()
@@ -125,31 +126,45 @@ export default function Home() {
       }, {})
     )
 
-    for (const method of allowedMethods) {
-      fetch('/api/predict', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url, method }),
+    // for (const method of allowedMethods) {
+    //   fetch('/api/predict', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({ url, method }),
+    //   })
+    //     .then((res) => res.json())
+    //     .then((res) => {
+    //       setPredictions((predictions: any) => ({
+    //         ...predictions,
+    //         [method]: res,
+    //       }))
+    //     })
+    //     .catch(() => {
+    //       setPredictions((predictions: any) => ({
+    //         ...predictions,
+    //         [method]: {
+    //           method,
+    //           error: 'An error occured while fetching the predictions.',
+    //         },
+    //       }))
+    //     })
+    // }
+
+    fetch('/api/entities', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        console.log(res)
+        setHtml(res.html)
       })
-        .then((res) => res.json())
-        .then((res) => {
-          setPredictions((predictions: any) => ({
-            ...predictions,
-            [method]: res,
-          }))
-        })
-        .catch(() => {
-          setPredictions((predictions: any) => ({
-            ...predictions,
-            [method]: {
-              method,
-              error: 'An error occured while fetching the predictions.',
-            },
-          }))
-        })
-    }
+      .catch(() => {})
   }
 
   const date = new Date(result?.article?.created?.[0].value)
@@ -335,18 +350,28 @@ export default function Home() {
                       result.article.created?.[0] && (
                         <div className="mb-8 text-slate-500">{date}</div>
                       )}
-                    {result.article.field_abstract?.[0] && (
+                    {html ? (
                       <div
                         dangerouslySetInnerHTML={{
-                          __html: result.article.field_abstract[0].value,
+                          __html: html,
                         }}
                       ></div>
+                    ) : (
+                      <>
+                        {result.article.field_abstract?.[0] && (
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: result.article.field_abstract[0].value,
+                            }}
+                          ></div>
+                        )}
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: result.article.body?.[0].value,
+                          }}
+                        ></div>
+                      </>
                     )}
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: result.article.body?.[0].value,
-                      }}
-                    ></div>
                   </article>
                 </>
               )}
