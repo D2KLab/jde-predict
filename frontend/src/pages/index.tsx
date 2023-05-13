@@ -5,11 +5,25 @@ import { allowedMethods } from './api/predict'
 
 import styles from './index.module.css'
 
-const methodsNames: { [key: string]: string } = {
-  bert: 'BERT (Supervisé)',
-  'claude-v1': 'Claude-v1',
-  'gpt-4': 'GPT-4',
-  zeste: 'ZeSTE',
+const methodsOptions: { [key: string]: any } = {
+  bert: {
+    name: 'Algorithme 1',
+    color: 'bg-yellow-500',
+  },
+  'claude-v1': {
+    name: 'Algorithme 2b',
+    color: 'bg-cyan-500',
+    hideScore: true,
+  },
+  'gpt-4': {
+    name: 'Algorithme 2a',
+    color: 'bg-emerald-500',
+    hideScore: true,
+  },
+  zeste: {
+    name: 'Algorithme 3',
+    color: 'bg-lime-500',
+  },
 }
 
 const generateLoadingLines = () => {
@@ -74,13 +88,6 @@ const generateLoadingLines = () => {
 
 const lato = Lato({ subsets: ['latin'], weight: '400' })
 
-const methodsColors: { [key: string]: string } = {
-  bert: 'bg-yellow-500',
-  'claude-v1': 'bg-cyan-500',
-  'gpt-4': 'bg-emerald-500',
-  zeste: 'bg-lime-500',
-}
-
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<ArticleResult | null>()
@@ -126,31 +133,31 @@ export default function Home() {
       }, {})
     )
 
-    // for (const method of allowedMethods) {
-    //   fetch('/api/predict', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({ url, method }),
-    //   })
-    //     .then((res) => res.json())
-    //     .then((res) => {
-    //       setPredictions((predictions: any) => ({
-    //         ...predictions,
-    //         [method]: res,
-    //       }))
-    //     })
-    //     .catch(() => {
-    //       setPredictions((predictions: any) => ({
-    //         ...predictions,
-    //         [method]: {
-    //           method,
-    //           error: 'An error occured while fetching the predictions.',
-    //         },
-    //       }))
-    //     })
-    // }
+    for (const method of allowedMethods) {
+      fetch('/api/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url, method }),
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          setPredictions((predictions: any) => ({
+            ...predictions,
+            [method]: res,
+          }))
+        })
+        .catch(() => {
+          setPredictions((predictions: any) => ({
+            ...predictions,
+            [method]: {
+              method,
+              error: 'An error occured while fetching the predictions.',
+            },
+          }))
+        })
+    }
 
     fetch('/api/entities', {
       method: 'POST',
@@ -161,7 +168,6 @@ export default function Home() {
     })
       .then((res) => res.json())
       .then((res) => {
-        console.log(res)
         setHtml(res.html)
       })
       .catch(() => {})
@@ -175,8 +181,8 @@ export default function Home() {
     })
     .toLocaleLowerCase()
 
-  const renderPredictionLabels = (pred: any) => {
-    if (pred.loading) {
+  const renderPredictionLabels = (results: any) => {
+    if (results.loading) {
       return (
         <div style={{ flex: 1, minWidth: 250, maxWidth: 350 }}>
           <div className="animate-pulse">
@@ -200,20 +206,23 @@ export default function Home() {
         </div>
       )
     }
-    if (pred.error) {
-      return <>{pred.error}</>
+    if (results.error) {
+      return <>{results.error}</>
     }
-    if (pred.labels.length === 0) {
-      return <>No predictions</>
+    if (!results.predictions || results.predictions.length === 0) {
+      return <>Aucune prédiction</>
     }
-    return pred.labels.map((label: string, i: number) => (
+    return results.predictions.map((prediction: any, i: number) => (
       <span
-        key={label}
+        key={prediction.label}
         className={`px-4 py-2 font-semibold text-sm ${
-          methodsColors[pred.method]
+          methodsOptions[results.method].color
         } text-white rounded-full shadow-sm`}
       >
-        {label} <sup>({pred.scores[i].toFixed(2)})</sup>
+        {prediction.label}{' '}
+        {!methodsOptions[results.method].hideScore && (
+          <sup>({prediction.score.toFixed(2)})</sup>
+        )}
       </span>
     ))
   }
@@ -320,16 +329,16 @@ export default function Home() {
                       if (!predictions[method]) {
                         return undefined
                       }
-                      const pred = predictions[method]
+                      const results = predictions[method]
                       return (
                         <div className="flex flex-col" key={method}>
                           <div>
                             <span className="font-semibold">
-                              {methodsNames[method]}
+                              {methodsOptions[method].name}
                             </span>
                           </div>
                           <div className="flex flex-col gap-2">
-                            {renderPredictionLabels(pred)}
+                            {renderPredictionLabels(results)}
                           </div>
                         </div>
                       )

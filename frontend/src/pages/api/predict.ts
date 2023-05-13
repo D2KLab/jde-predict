@@ -4,8 +4,7 @@ import { APIError } from '@/types'
 
 export type PredictionResult = {
   method: string
-  labels: string[]
-  scores: number[]
+  predictions: any
 }
 
 export const allowedMethods = ['bert', 'gpt-4', 'claude-v1', 'zeste']
@@ -51,16 +50,9 @@ export default async function handler(
       }),
     })
   ).json()
-  const labels: string[] = []
-  const scores: number[] = []
-  resPredict.predictions.forEach((pred: any) => {
-    labels.push(pred.label)
-    scores.push(pred.score)
-  })
 
   res.status(200).json({
     method,
-    labels,
-    scores,
+    predictions: resPredict.predictions,
   })
 }
