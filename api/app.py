@@ -81,9 +81,9 @@ def get_text_from_url(url):
         texts.append(text)
     if 'field_abstract' in data and len(data['field_abstract']) > 0 and 'value' in data['field_abstract'][0]:
         texts.append(data['field_abstract']['value'])
-
-    cache_texts[url] = texts
-    return '. '.join(texts)
+    final_text = '. '.join(texts)
+    cache_texts[url] = final_text
+    return final_text
 
 
 def get_zeste_predictions(text):
