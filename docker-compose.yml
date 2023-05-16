@@ -2,11 +2,30 @@ version: "3.3"
 services:
   api:
     build: ./api
+    restart: unless-stopped
+    depends_on:
+      - bert-server
+      - cache
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_HOST: cache
   bert-server:
     build: ./bert-server
+    restart: unless-stopped
     volumes:
-      - ./bert-server/bert-models:/app/bert-models
+    - ./bert-server/bert-models:/app/bert-models
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "5811:3000"
+  cache:
+    image: redis:6.2-alpine
+    restart: unless-stopped
+    volumes:
+      - cache:/data
+
+volumes:
+  cache:
+    driver: local

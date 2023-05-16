@@ -7,8 +7,8 @@ COPY . /app
 WORKDIR /app/
 
 ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
 EXPOSE 80
 
 CMD ["python", "app.py"]
-#CMD ["gunicorn", "--timeout", "120", "--preload", "--workers", "1", "--bind", "0.0.0.0:8000", "app:app"]

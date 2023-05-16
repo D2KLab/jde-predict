@@ -10,10 +10,13 @@ import spacy
 from spacy import displacy
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
+import redis
+import json
 
 
 load_dotenv()
 
+redis_client = redis.Redis(host=os.getenv('REDIS_HOST'))
 nlp = spacy.load('fr_core_news_lg')
 
 jde_classes = [
@@ -34,10 +37,6 @@ zeste_config = {
     'threshold': 0.11, # float or None
     'topk': 3, # int or None
 }
-
-cache_predictions = {}
-cache_texts = {}
-cache_entities = {}
 
 app = Flask(__name__)
 api = Api(app)
@@ -65,9 +64,12 @@ EntitiesResponse = api.model('EntitiesResponse', {
 })
 
 def get_text_from_url(url):
-    if url in cache_texts:
-        return cache_texts[url]
+    cached_text = redis_client.get(f'texts|{url}')
+    if cached_text is not None:
+        print(f'[TEXT][CACHE] {url}')
+        return cached_text
 
+    print(f'[TEXT][QUERY] {url}')
     parsed_url = urlparse(url)
     if parsed_url.netloc != 'www.lejournaldesentreprises.com':
         raise ValueError('Invalid url')
@@ -82,7 +84,8 @@ def get_text_from_url(url):
     if 'field_abstract' in data and len(data['field_abstract']) > 0 and 'value' in data['field_abstract'][0]:
         texts.append(data['field_abstract']['value'])
     final_text = '. '.join(texts)
-    cache_texts[url] = final_text
+
+    redis_client.set(f'texts|{url}', final_text)
     return final_text
 
 
@@ -240,9 +243,10 @@ class Predict(Resource):
         method = args['method']
         url = args['url']
 
-        if method in cache_predictions and url in cache_predictions[method]:
+        cached_predictions = redis_client.get(f'predictions|{method}|{url}')
+        if cached_predictions is not None:
             print(f'[PREDICT][CACHE] {method} {url}')
-            return { 'predictions': cache_predictions[method][url] }
+            return { 'predictions': json.loads(cached_predictions) }
 
         print(f'[PREDICT][QUERY] {method} {url}')
         text = get_text_from_url(url)
@@ -252,14 +256,12 @@ class Predict(Resource):
             predictions = get_claude_predictions(text)
         elif method == 'gpt-4':
             predictions = get_gpt_predictions(text)
-        elif method == 'bert':
-            predictions = get_bert_predictions(text)
+        # elif method == 'bert':
+            # predictions = get_bert_predictions(text)
         else:
             return 'Prediction method not implemented', 501
 
-        if method not in cache_predictions:
-            cache_predictions[method] = {}
-        cache_predictions[method][url] = predictions
+        redis_client.set(f'predictions|{method}|{url}', json.dumps(predictions))
         return { 'predictions': predictions }
 
 
@@ -272,20 +274,21 @@ class Predict(Resource):
         args = EntitiesRequest.parse_args()
         url = args['url']
 
-        if url in cache_entities:
+        cached_entities = redis_client.get(f'entities|{url}')
+        if cached_entities is not None:
             print(f'[ENTITIES][CACHE] {url}')
-            response = cache_entities[url]
-        else:
-            print(f'[ENTITIES][QUERY] {url}')
-            text = get_text_from_url(url)
-            doc = nlp(text)
-            html = displacy.render(doc, style='ent', page=False, jupyter=False, options={'ents': ['ORG', 'LOC', 'PER']})
-            html = html.replace('</br>', ' ')
-            response = { 'html': html, 'entities': doc.ents }
-            cache_entities[url] = response
+            return cached_entities
 
+        print(f'[ENTITIES][QUERY] {url}')
+        text = get_text_from_url(url)
+        doc = nlp(text)
+        html = displacy.render(doc, style='ent', page=False, jupyter=False, options={'ents': ['ORG', 'LOC', 'PER']})
+        html = html.replace('</br>', ' ')
+        entities = [(e.text, e.label_) for e in doc.ents]
+
+        response = { 'html': html, 'entities': entities }
+        redis_client.set(f'entities|{url}', json.dumps(response))
         return response
-
 
 
 if __name__ == '__main__':
