@@ -277,7 +277,7 @@ class Predict(Resource):
         cached_entities = redis_client.get(f'entities|{url}')
         if cached_entities is not None:
             print(f'[ENTITIES][CACHE] {url}')
-            return cached_entities
+            return json.loads(cached_entities)
 
         print(f'[ENTITIES][QUERY] {url}')
         text = get_text_from_url(url)
