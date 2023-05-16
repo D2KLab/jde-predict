@@ -8,7 +8,8 @@ import os
 import openai
 import spacy
 from spacy import displacy
-from spacy.cli import download
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup
 
 
 load_dotenv()
@@ -34,12 +35,16 @@ zeste_config = {
     'topk': 3, # int or None
 }
 
+cache_predictions = {}
+cache_texts = {}
+cache_entities = {}
+
 app = Flask(__name__)
 api = Api(app)
 
 PredictRequest = reqparse.RequestParser()
 PredictRequest.add_argument('method', choices=['bert', 'claude-v1', 'gpt-4', 'zeste'], required=True)
-PredictRequest.add_argument('text', type=str, location='form')
+PredictRequest.add_argument('url', type=str, location='form')
 Prediction = api.model('Prediction', {
     'label': fields.String,
     'score': fields.Float,
@@ -49,7 +54,7 @@ PredictResponse = api.model('PredictResponse', {
 })
 
 EntitiesRequest = reqparse.RequestParser()
-EntitiesRequest.add_argument('text', type=str, location='form')
+EntitiesRequest.add_argument('url', type=str, location='form')
 NamedEntity = api.model('NamedEntity', {
     'label': fields.String,
     'type': fields.String,
@@ -58,6 +63,28 @@ EntitiesResponse = api.model('EntitiesResponse', {
     'html': fields.String,
     'entities': fields.List(fields.Nested(NamedEntity)),
 })
+
+def get_text_from_url(url):
+    if url in cache_texts:
+        return cache_texts[url]
+
+    parsed_url = urlparse(url)
+    if parsed_url.netloc != 'www.lejournaldesentreprises.com':
+        raise ValueError('Invalid url')
+    res = requests.get(url, params={'_format': 'json'})
+    data = res.json()
+    texts = []
+    if 'body' in data and len(data['body']) > 0 and 'value' in data['body'][0]:
+        html = data['body'][0]['value']
+        soup = BeautifulSoup(html, 'html.parser')
+        text = soup.get_text()
+        texts.append(text)
+    if 'field_abstract' in data and len(data['field_abstract']) > 0 and 'value' in data['field_abstract'][0]:
+        texts.append(data['field_abstract']['value'])
+
+    cache_texts[url] = texts
+    return '. '.join(texts)
+
 
 def get_zeste_predictions(text):
     assert(len(zeste_config['classes']) == len(jde_classes))
@@ -211,7 +238,14 @@ class Predict(Resource):
     def post(self):
         args = PredictRequest.parse_args()
         method = args['method']
-        text = args['text']
+        url = args['url']
+
+        if method in cache_predictions and url in cache_predictions[method]:
+            print(f'[PREDICT][CACHE] {method} {url}')
+            return { 'predictions': cache_predictions[method][url] }
+
+        print(f'[PREDICT][QUERY] {method} {url}')
+        text = get_text_from_url(url)
         if method == 'zeste':
             predictions = get_zeste_predictions(text)
         elif method == 'claude-v1':
@@ -222,6 +256,10 @@ class Predict(Resource):
             predictions = get_bert_predictions(text)
         else:
             return 'Prediction method not implemented', 501
+
+        if method not in cache_predictions:
+            cache_predictions[method] = {}
+        cache_predictions[method][url] = predictions
         return { 'predictions': predictions }
 
 
@@ -232,11 +270,22 @@ class Predict(Resource):
     @api.response(200, 'Success')
     def post(self):
         args = EntitiesRequest.parse_args()
-        text = args['text']
-        doc = nlp(text)
-        html = displacy.render(doc, style='ent', page=False, jupyter=False, options={'ents': ['ORG', 'LOC', 'PER']})
-        html = html.replace('</br>', ' ')
-        return { 'html': html, 'entities': [] }
+        url = args['url']
+
+        if url in cache_entities:
+            print(f'[ENTITIES][CACHE] {url}')
+            response = cache_entities[url]
+        else:
+            print(f'[ENTITIES][QUERY] {url}')
+            text = get_text_from_url(url)
+            doc = nlp(text)
+            html = displacy.render(doc, style='ent', page=False, jupyter=False, options={'ents': ['ORG', 'LOC', 'PER']})
+            html = html.replace('</br>', ' ')
+            response = { 'html': html, 'entities': doc.ents }
+            cache_entities[url] = response
+
+        return response
+
 
 
 if __name__ == '__main__':

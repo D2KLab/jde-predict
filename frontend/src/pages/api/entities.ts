@@ -20,13 +20,6 @@ export default async function handler(
     return res.status(400).json({ error: 'Invalid url' })
   }
 
-  url.searchParams.set('_format', 'json')
-
-  const data = await (await fetch(url)).json()
-
-  const articleAbstract = convert(data.field_abstract?.[0].value)
-  const articleText = convert(data.body?.[0].value)
-
   const apiUrl = process.env.API_URL as string
   const resPredict = await (
     await fetch(`${apiUrl}/entities`, {
@@ -35,7 +28,7 @@ export default async function handler(
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        text: [articleAbstract, articleText].filter((x) => x).join('. '),
+        url: url.toString(),
       }),
     })
   ).json()
