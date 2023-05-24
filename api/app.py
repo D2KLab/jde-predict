@@ -67,7 +67,7 @@ def get_text_from_url(url):
     cached_text = redis_client.get(f'texts|{url}')
     if cached_text is not None:
         print(f'[TEXT][CACHE] {url}')
-        return cached_text
+        return cached_text.decode('utf-8', 'ignore')
 
     print(f'[TEXT][QUERY] {url}')
     parsed_url = urlparse(url)
@@ -83,7 +83,7 @@ def get_text_from_url(url):
         texts.append(text)
     if 'field_abstract' in data and len(data['field_abstract']) > 0 and 'value' in data['field_abstract'][0]:
         texts.append(data['field_abstract']['value'])
-    final_text = '. '.join(texts)
+    final_text = '. '.join(texts).decode('utf-8', 'ignore')
 
     redis_client.set(f'texts|{url}', final_text)
     return final_text
@@ -256,8 +256,8 @@ class Predict(Resource):
             predictions = get_claude_predictions(text)
         elif method == 'gpt-4':
             predictions = get_gpt_predictions(text)
-        # elif method == 'bert':
-            # predictions = get_bert_predictions(text)
+        elif method == 'bert':
+            predictions = get_bert_predictions(text)
         else:
             return 'Prediction method not implemented', 501
 
