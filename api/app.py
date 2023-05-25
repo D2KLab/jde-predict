@@ -82,7 +82,7 @@ def get_text_from_url(url):
         text = soup.get_text()
         texts.append(text)
     if 'field_abstract' in data and len(data['field_abstract']) > 0 and 'value' in data['field_abstract'][0]:
-        texts.append(data['field_abstract']['value'])
+        texts.append(data['field_abstract'][0]['value'])
     final_text = '. '.join(texts)
 
     redis_client.set(f'texts|{url}', final_text)
