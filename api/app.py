@@ -16,7 +16,7 @@ import json
 
 load_dotenv()
 
-redis_client = redis.Redis(host=os.getenv('REDIS_HOST'))
+redis_client = redis.Redis(host=os.getenv('REDIS_HOST'), decode_responses=True)
 nlp = spacy.load('fr_core_news_lg')
 
 jde_classes = [
@@ -67,7 +67,7 @@ def get_text_from_url(url):
     cached_text = redis_client.get(f'texts|{url}')
     if cached_text is not None:
         print(f'[TEXT][CACHE] {url}')
-        return cached_text.decode('utf-8', 'ignore')
+        return cached_text
 
     print(f'[TEXT][QUERY] {url}')
     parsed_url = urlparse(url)
@@ -83,7 +83,7 @@ def get_text_from_url(url):
         texts.append(text)
     if 'field_abstract' in data and len(data['field_abstract']) > 0 and 'value' in data['field_abstract'][0]:
         texts.append(data['field_abstract']['value'])
-    final_text = '. '.join(texts).decode('utf-8', 'ignore')
+    final_text = '. '.join(texts)
 
     redis_client.set(f'texts|{url}', final_text)
     return final_text
