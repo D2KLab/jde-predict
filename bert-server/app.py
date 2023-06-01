@@ -146,10 +146,10 @@ def get_bert_predictions(text):
     return predictions
 
 
-def extract_entities(text):
+def extract_entities(full_text):
     entities = {}
 
-    camembert_entities = camembert_nlp(text)
+    camembert_entities = camembert_nlp(full_text)
     entities['camembert'] = list(map(lambda x: {
         "text": x['word'],
         "label": x['entity_group'],
@@ -158,7 +158,7 @@ def extract_entities(text):
         "end_position": int(x['end']),
     }, camembert_entities))
 
-    flair_sentence = Sentence(text, use_tokenizer=True)
+    flair_sentence = Sentence(full_text, use_tokenizer=True)
     flair_tagger.predict(flair_sentence)
     entities['flair'] = []
     for entity in flair_sentence.get_spans('ner'):
@@ -171,7 +171,7 @@ def extract_entities(text):
         })
 
     entities['spacy'] = []
-    doc = spacy_nlp(text)
+    doc = spacy_nlp(full_text)
     for ent in doc.ents:
         entities['spacy'].append({
             "text": ent.text,
@@ -183,31 +183,36 @@ def extract_entities(text):
     filtered_entities = majority_vote(entities.values())
 
     dic_ents = {
-        "text": text,
+        "text": full_text,
         "ents": [],
         "title": None,
     }
-    for text in filtered_entities.keys():
+    for span in filtered_entities.keys():
+        # TODO: Do not hardcode this, instead use a blacklist of entities to remove
+        # If text is equal to "CA" and label is "ORG", remove entity
+        if span == "CA" and filtered_entities[span] == "ORG":
+            continue
+
         # Get start and end position from spaCy or Flair
         for entity in entities['spacy']:
-            if entity['text'] == text:
+            if entity['text'] == span:
                 dic_ents["ents"].append({
                     "start": entity['start_position'],
                     "end": entity['end_position'],
-                    "label": filtered_entities[text],
+                    "label": filtered_entities[span],
                 })
         for entity in entities['flair']:
-            if entity['text'] == text:
+            if entity['text'] == span:
                 # Check if the entity is already in the list at the same start,end,label
                 already_in = False
                 for ent in dic_ents['ents']:
-                    if ent['start'] == entity['start_position'] and ent['end'] == entity['end_position'] and ent['label'] == filtered_entities[text]:
+                    if ent['start'] == entity['start_position'] and ent['end'] == entity['end_position'] and ent['label'] == filtered_entities[span]:
                         already_in = True
                 if not already_in:
                     dic_ents["ents"].append({
                         "start": entity['start_position'],
                         "end": entity['end_position'],
-                        "label": filtered_entities[text],
+                        "label": filtered_entities[span],
                     })
 
     return dic_ents
