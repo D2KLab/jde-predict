@@ -92,6 +92,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [result, setResult] = useState<ArticleResult | null>()
   const [predictions, setPredictions] = useState<any>({})
+  const [themes, setThemes] = useState<string[]>([])
   const [url, setUrl] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [html, setHtml] = useState<string | null>(null)
@@ -107,6 +108,7 @@ export default function Home() {
     setResult(null)
     setHtml(null)
     setPredictions({})
+    setThemes([])
     setError(null)
 
     const resArticle = await (
@@ -145,6 +147,19 @@ export default function Home() {
       .then((res) => res.json())
       .then((res) => {
         setHtml(res.html)
+      })
+      .catch(() => {})
+
+    await fetch('/api/themes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        setThemes(res.themes)
       })
       .catch(() => {})
 
@@ -352,37 +367,54 @@ export default function Home() {
                       {result.article.title[0].value}
                     </h1>
                     {result.article.field_auteur_libre?.[0] && (
-                      <div className="mb-8 text-slate-500">
+                      <div className="mb-4 text-slate-500">
                         Par {result.article.field_auteur_libre[0].value}
                         {result.article.created && <>, le {date}</>}
                       </div>
                     )}
                     {!result.article.field_auteur_libre?.[0] &&
                       result.article.created?.[0] && (
-                        <div className="mb-8 text-slate-500">{date}</div>
+                        <div className="mb-4 text-slate-500">{date}</div>
                       )}
-                    {html ? (
-                      <div
-                        dangerouslySetInnerHTML={{
-                          __html: html,
-                        }}
-                      ></div>
-                    ) : (
-                      <>
-                        {result.article.field_abstract?.[0] && (
+                    {themes.length > 0 && (
+                      <div className="mb-4 flex gap-2">
+                        <span className="font-semibold">
+                          Thème{themes.length === 1 ? '' : 's'}:
+                        </span>
+                        {themes.map((theme) => (
                           <div
-                            dangerouslySetInnerHTML={{
-                              __html: result.article.field_abstract[0].value,
-                            }}
-                          ></div>
-                        )}
+                            key={theme}
+                            className="px-4 py-2 font-semibold text-sm bg-slate-400 text-white rounded-full shadow-sm"
+                          >
+                            {theme}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-8">
+                      {html ? (
                         <div
                           dangerouslySetInnerHTML={{
-                            __html: result.article.body?.[0].value,
+                            __html: html,
                           }}
                         ></div>
-                      </>
-                    )}
+                      ) : (
+                        <>
+                          {result.article.field_abstract?.[0] && (
+                            <div
+                              dangerouslySetInnerHTML={{
+                                __html: result.article.field_abstract[0].value,
+                              }}
+                            ></div>
+                          )}
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: result.article.body?.[0].value,
+                            }}
+                          ></div>
+                        </>
+                      )}
+                    </div>
                   </article>
                 </>
               )}

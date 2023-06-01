@@ -20,8 +20,8 @@ export default async function handler(
   }
 
   const apiUrl = process.env.API_URL as string
-  const resPredict = await (
-    await fetch(`${apiUrl}/entities`, {
+  const resThemes = await (
+    await fetch(`${apiUrl}/themes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -32,5 +32,5 @@ export default async function handler(
     })
   ).json()
 
-  res.status(200).json(resPredict)
+  res.status(200).json(resThemes)
 }

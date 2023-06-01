@@ -49,6 +49,12 @@ PredictResponse = api.model('PredictResponse', {
     'predictions': fields.List(fields.Nested(Prediction)),
 })
 
+ThemesRequest = reqparse.RequestParser()
+ThemesRequest.add_argument('url', type=str, location='form')
+ThemesResponse = api.model('ThemesResponse', {
+    'themes': fields.List(fields.String),
+})
+
 EntitiesRequest = reqparse.RequestParser()
 EntitiesRequest.add_argument('url', type=str, location='form')
 NamedEntity = api.model('NamedEntity', {
@@ -141,9 +147,12 @@ def get_claude_predictions(text):
     client = anthropic.Client(CLAUDE_API_KEY)
 
     text = text.replace('\n', ' ')[0:28000-500]
-    prompt=f"""{anthropic.HUMAN_PROMPT}Human: Texte à classifier: {text}.
+    prompt=f"""{anthropic.HUMAN_PROMPT}Texte à classifier: {text}.
+
 Veuillez retourner jusqu'à 3 numéros de catégories séparés par une virgule, parmi les options suivantes, uniquement si explicitement décrites.
+
 {prompt_classes}
+
 Choix:{anthropic.AI_PROMPT}"""
     resp = client.completion(
         prompt=prompt,
@@ -184,8 +193,11 @@ def get_gpt_predictions(text):
 
     text = text.replace('\n', ' ')[0:8000-500]
     prompt=f"""Texte à classifier: {text}.
+
 Veuillez retourner jusqu'à 3 numéros de catégories séparés par une virgule, parmi les options suivantes, uniquement si explicitement décrites.
+
 {prompt_classes}
+
 Choix:"""
 
     response = openai.ChatCompletion.create(
@@ -220,6 +232,47 @@ def get_bert_predictions(text):
     )
     data = res.json()
     return data['predictions']
+
+
+def get_claude_themes(text):
+    claude_classes = [
+        'Fusion - Acquisition',
+        'RSE',
+        'Ressource Humaine',
+        'Emploi',
+        # 'Fiscalité',
+        # 'Juridique'
+        'International',
+        'Carnet',
+        'Investissement',
+        'Projet',
+    ]
+    prompt_classes = '\n'.join([f'{i+1}. {x}' for i, x in enumerate(claude_classes)])
+
+    CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')
+    client = anthropic.Client(CLAUDE_API_KEY)
+
+    text = text.replace('\n', ' ')[0:28000-2000]
+    prompt=f"""{anthropic.HUMAN_PROMPT}Texte à classifier: {text}.
+
+Veuillez retourner le numéro de la catégorie, parmi les options suivantes. Si plusieurs catégories sont détectées, retourner les deux premières. Si aucune catégorie n'est reconnue, retourner NULL.
+
+{prompt_classes}
+
+Choix:{anthropic.AI_PROMPT}"""
+    resp = client.completion(
+        prompt=prompt,
+        stop_sequences=[anthropic.HUMAN_PROMPT],
+        model="claude-v1.3",
+        max_tokens_to_sample=8,
+    )
+    themes = []
+    numbers = re.findall(r'\d+', resp['completion'])
+    numbers_list = [int(num) for num in numbers]
+    for num in numbers_list:
+        if num >= 1 and num <= len(claude_classes):
+            themes.append(claude_classes[num - 1])
+    return themes
 
 
 @api.route('/status')
@@ -294,6 +347,30 @@ class Predict(Resource):
 
         response = { 'html': html, 'entities': entities }
         redis_client.set(f'entities|{url}', json.dumps(response))
+        return response
+
+
+@api.route('/themes')
+class Themes(Resource):
+    @api.expect(ThemesRequest)
+    @api.marshal_with(ThemesResponse)
+    @api.response(200, 'Success')
+    def post(self):
+        args = EntitiesRequest.parse_args()
+        url = args['url']
+
+        cached_themes = redis_client.get(f'themes|{url}')
+        if cached_themes is not None:
+            print(f'[THEMES][CACHE] {url}')
+            return json.loads(cached_themes)
+
+        print(f'[THEMES][QUERY] {url}')
+        text = get_text_from_url(url)
+
+        themes = get_claude_themes(text)
+
+        response = { 'themes': themes }
+        redis_client.set(f'themes|{url}', json.dumps(response))
         return response
 
 
