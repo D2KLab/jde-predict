@@ -89,12 +89,12 @@ const generateLoadingLines = () => {
 const lato = Lato({ subsets: ['latin'], weight: '400' })
 
 export default function Home() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [result, setResult] = useState<ArticleResult | null>()
   const [predictions, setPredictions] = useState<any>({})
-  const [url, setUrl] = useState('')
-  const [error, setError] = useState(null)
-  const [html, setHtml] = useState(false)
+  const [url, setUrl] = useState<string>('')
+  const [error, setError] = useState<string | null>(null)
+  const [html, setHtml] = useState<string | null>(null)
 
   const onSubmit = async (ev: React.FormEvent<HTMLFormElement>) => {
     ev.preventDefault()
@@ -105,6 +105,7 @@ export default function Home() {
     setUrl(url)
     setIsLoading(true)
     setResult(null)
+    setHtml(null)
     setPredictions({})
     setError(null)
 
@@ -124,6 +125,7 @@ export default function Home() {
     }
 
     setResult(resArticle)
+    setHtml(resArticle.html)
     setIsLoading(false)
 
     setPredictions(
@@ -132,6 +134,19 @@ export default function Home() {
         return acc
       }, {})
     )
+
+    await fetch('/api/entities', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        setHtml(res.html)
+      })
+      .catch(() => {})
 
     for (const method of allowedMethods) {
       fetch('/api/predict', {
@@ -158,19 +173,6 @@ export default function Home() {
           }))
         })
     }
-
-    fetch('/api/entities', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url }),
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        setHtml(res.html)
-      })
-      .catch(() => {})
   }
 
   const date = new Date(result?.article?.created?.[0].value)

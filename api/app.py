@@ -6,8 +6,6 @@ from dotenv import load_dotenv
 import re
 import os
 import openai
-import spacy
-from spacy import displacy
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import redis
@@ -17,7 +15,6 @@ import json
 load_dotenv()
 
 redis_client = redis.Redis(host=os.getenv('REDIS_HOST'), decode_responses=True)
-nlp = spacy.load('fr_core_news_lg')
 
 jde_classes = [
     "Rachat / Cession",
@@ -281,10 +278,19 @@ class Predict(Resource):
 
         print(f'[ENTITIES][QUERY] {url}')
         text = get_text_from_url(url)
-        doc = nlp(text)
-        html = displacy.render(doc, style='ent', page=False, jupyter=False, options={'ents': ['ORG', 'LOC', 'PER']})
-        html = html.replace('</br>', ' ')
-        entities = [(e.text, e.label_) for e in doc.ents]
+
+        res = requests.post(os.getenv('BERT_API_URL') + '/ner',
+            headers={
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json',
+            },
+            data={
+                "text": text,
+            }
+        )
+        data = res.json()
+        html = data['html']
+        entities = data['entities']
 
         response = { 'html': html, 'entities': entities }
         redis_client.set(f'entities|{url}', json.dumps(response))

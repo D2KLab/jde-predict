@@ -8,7 +8,5 @@ openai==0.27.6
 python-dotenv==1.0.0
 gunicorn==20.1.0
 gevent==22.10.2
-spacy==3.5.2
-fr-core-news-lg @ https://github.com/explosion/spacy-models/releases/download/fr_core_news_lg-3.5.0/fr_core_news_lg-3.5.0-py3-none-any.whl
 beautifulsoup4==4.12.2
 redis==4.5.5
