@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { convert } from 'html-to-text'
 import { APIError } from '@/types'
 
 export type PredictionResult = {
