@@ -41,11 +41,13 @@ api = Api(app)
 PredictRequest = reqparse.RequestParser()
 PredictRequest.add_argument('method', choices=['bert', 'claude-v1', 'gpt-4', 'zeste'], required=True)
 PredictRequest.add_argument('url', type=str, location='form')
+PredictRequest.add_argument('text', type=str)
 Prediction = api.model('Prediction', {
     'label': fields.String,
     'score': fields.Float,
 })
 PredictResponse = api.model('PredictResponse', {
+    'method': fields.String,
     'predictions': fields.List(fields.Nested(Prediction)),
 })
 
@@ -292,14 +294,28 @@ class Predict(Resource):
         args = PredictRequest.parse_args()
         method = args['method']
         url = args['url']
+        text = args['text']
 
-        cached_predictions = redis_client.get(f'predictions|{method}|{url}')
+        if url is None and text is None:
+            return 'Either url or text must be provided', 400
+
+        if url is not None and text is not None:
+            return 'Only one of url or text must be provided', 400
+
+        if url is not None:
+            text = get_text_from_url(url)
+
+        # Get unique hash from text string
+        text_hash = hash(text)
+
+        # Check if predictions are cached
+        cached_predictions = redis_client.get(f'predictions|{method}|')
         if cached_predictions is not None:
-            print(f'[PREDICT][CACHE] {method} {url}')
+            print(f'[PREDICT][CACHE] {method} {text_hash}')
             return { 'predictions': json.loads(cached_predictions) }
 
-        print(f'[PREDICT][QUERY] {method} {url}')
-        text = get_text_from_url(url)
+        # Predict
+        print(f'[PREDICT][QUERY] {method} {text_hash}')
         if method == 'zeste':
             predictions = get_zeste_predictions(text)
         elif method == 'claude-v1':
@@ -311,8 +327,8 @@ class Predict(Resource):
         else:
             return 'Prediction method not implemented', 501
 
-        redis_client.set(f'predictions|{method}|{url}', json.dumps(predictions))
-        return { 'predictions': predictions }
+        redis_client.set(f'predictions|{method}|{text_hash}', json.dumps(predictions))
+        return { 'method': method, 'predictions': predictions }
 
 
 @api.route('/entities')
@@ -323,14 +339,25 @@ class Predict(Resource):
     def post(self):
         args = EntitiesRequest.parse_args()
         url = args['url']
+        text = args['text']
 
-        cached_entities = redis_client.get(f'entities|{url}')
+        if url is None and text is None:
+            return 'Either url or text must be provided', 400
+
+        if url is not None and text is not None:
+            return 'Only one of url or text must be provided', 400
+
+        if url is not None:
+            text = get_text_from_url(url)
+
+        text_hash = hash(text)
+
+        cached_entities = redis_client.get(f'entities|{text_hash}')
         if cached_entities is not None:
-            print(f'[ENTITIES][CACHE] {url}')
+            print(f'[ENTITIES][CACHE] {text_hash}')
             return json.loads(cached_entities)
 
-        print(f'[ENTITIES][QUERY] {url}')
-        text = get_text_from_url(url)
+        print(f'[ENTITIES][QUERY] {text_hash}')
 
         res = requests.post(os.getenv('BERT_API_URL') + '/ner',
             headers={
@@ -346,7 +373,7 @@ class Predict(Resource):
         entities = data['entities']
 
         response = { 'html': html, 'entities': entities }
-        redis_client.set(f'entities|{url}', json.dumps(response))
+        redis_client.set(f'entities|{text_hash}', json.dumps(response))
         return response
 
 
@@ -358,19 +385,30 @@ class Themes(Resource):
     def post(self):
         args = EntitiesRequest.parse_args()
         url = args['url']
+        text = args['text']
 
-        cached_themes = redis_client.get(f'themes|{url}')
+        if url is None and text is None:
+            return 'Either url or text must be provided', 400
+
+        if url is not None and text is not None:
+            return 'Only one of url or text must be provided', 400
+
+        if url is not None:
+            text = get_text_from_url(url)
+
+        text_hash = hash(text)
+
+        cached_themes = redis_client.get(f'themes|{text_hash}')
         if cached_themes is not None:
-            print(f'[THEMES][CACHE] {url}')
+            print(f'[THEMES][CACHE] {text_hash}')
             return json.loads(cached_themes)
 
-        print(f'[THEMES][QUERY] {url}')
-        text = get_text_from_url(url)
+        print(f'[THEMES][QUERY] {text_hash}')
 
         themes = get_claude_themes(text)
 
         response = { 'themes': themes }
-        redis_client.set(f'themes|{url}', json.dumps(response))
+        redis_client.set(f'themes|{text_hash}', json.dumps(response))
         return response
 
 
