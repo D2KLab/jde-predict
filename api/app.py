@@ -311,7 +311,7 @@ class Predict(Resource):
         text_hash = hash(text)
 
         # Check if predictions are cached
-        cached_predictions = redis_client.get(f'predictions|{method}|')
+        cached_predictions = redis_client.get(f'predictions|{method}|{text_hash}')
         if cached_predictions is not None:
             print(f'[PREDICT][CACHE] {method} {text_hash}')
             return { 'predictions': json.loads(cached_predictions) }
