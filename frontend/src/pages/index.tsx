@@ -7,21 +7,21 @@ import styles from './index.module.css'
 
 const methodsOptions: { [key: string]: any } = {
   bert: {
-    name: 'Algorithme 1',
+    name: 'BERT-based',
     color: 'bg-yellow-500',
   },
   'claude-v1': {
-    name: 'Algorithme 2b',
+    name: 'Claude 1.3',
     color: 'bg-cyan-500',
     hideScore: true,
   },
   'gpt-4': {
-    name: 'Algorithme 2a',
+    name: 'GPT 4',
     color: 'bg-emerald-500',
     hideScore: true,
   },
   zeste: {
-    name: 'Algorithme 3',
+    name: 'ZeSTE NLI',
     color: 'bg-lime-500',
   },
 }
