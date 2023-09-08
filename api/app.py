@@ -61,13 +61,9 @@ ThemesResponse = api.model('ThemesResponse', {
 EntitiesRequest = reqparse.RequestParser()
 EntitiesRequest.add_argument('url', type=str, location='form')
 EntitiesRequest.add_argument('text', type=str)
-NamedEntity = api.model('NamedEntity', {
-    'label': fields.String,
-    'type': fields.String,
-})
 EntitiesResponse = api.model('EntitiesResponse', {
     'html': fields.String,
-    'entities': fields.List(fields.Nested(NamedEntity)),
+    'entities': fields.Raw,
 })
 
 def get_text_from_url(url):
