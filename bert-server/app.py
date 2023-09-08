@@ -200,6 +200,7 @@ def extract_entities(full_text):
                     "start": entity['start_position'],
                     "end": entity['end_position'],
                     "label": filtered_entities[span],
+                    "value": entity['text'],
                 })
         for entity in entities['flair']:
             if entity['text'] == span:
@@ -213,6 +214,7 @@ def extract_entities(full_text):
                         "start": entity['start_position'],
                         "end": entity['end_position'],
                         "label": filtered_entities[span],
+                        "value": entity['text'],
                     })
 
     return dic_ents
