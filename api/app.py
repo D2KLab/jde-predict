@@ -53,12 +53,14 @@ PredictResponse = api.model('PredictResponse', {
 
 ThemesRequest = reqparse.RequestParser()
 ThemesRequest.add_argument('url', type=str, location='form')
+ThemesRequest.add_argument('text', type=str)
 ThemesResponse = api.model('ThemesResponse', {
     'themes': fields.List(fields.String),
 })
 
 EntitiesRequest = reqparse.RequestParser()
 EntitiesRequest.add_argument('url', type=str, location='form')
+EntitiesRequest.add_argument('text', type=str)
 NamedEntity = api.model('NamedEntity', {
     'label': fields.String,
     'type': fields.String,
