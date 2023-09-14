@@ -1,9 +1,11 @@
+import { useSearchParams } from 'next/navigation'
 import { Lato } from 'next/font/google'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArticleResult } from './api/article'
 import { allowedMethods } from './api/predict'
 
 import styles from './index.module.css'
+import { useRouter } from 'next/router'
 
 const methodsOptions: { [key: string]: any } = {
   bert: {
@@ -96,10 +98,20 @@ export default function Home() {
   const [url, setUrl] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [html, setHtml] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  useEffect(() => {
+    const url = searchParams.get('url')
+    if (url) {
+      predict(url)
+    }
+  }, [searchParams])
 
   const onSubmit = async (ev: React.FormEvent<HTMLFormElement>) => {
     ev.preventDefault()
-    predict(url)
+    const url = ev.currentTarget.url.value
+    router.push(`/?url=${url}`)
   }
 
   const predict = async (url: string) => {
@@ -252,6 +264,7 @@ export default function Home() {
           onClick={() => {
             setResult(undefined)
             setUrl('')
+            router.push('/')
           }}
         >
           <span className={styles.menu_button}>
@@ -481,8 +494,10 @@ export default function Home() {
                 <div
                   className="max-w-sm rounded overflow-hidden shadow-lg cursor-pointer"
                   onClick={() => {
-                    predict(
-                      'https://www.lejournaldesentreprises.com/hauts-de-france/breve/le-groupe-socomore-rachete-mader-aero-204794'
+                    router.push(
+                      `/?url=${encodeURIComponent(
+                        'https://www.lejournaldesentreprises.com/hauts-de-france/breve/le-groupe-socomore-rachete-mader-aero-204794'
+                      )}`
                     )
                   }}
                 >
@@ -501,8 +516,10 @@ export default function Home() {
                 <div
                   className="max-w-sm rounded overflow-hidden shadow-lg cursor-pointer"
                   onClick={() => {
-                    predict(
-                      'https://www.lejournaldesentreprises.com/auvergne-rhone-alpes/breve/la-region-aura-alloue-plus-de-40-millions-deuros-de-credits-europeens-2060546'
+                    router.push(
+                      `/?url=${encodeURIComponent(
+                        'https://www.lejournaldesentreprises.com/auvergne-rhone-alpes/breve/la-region-aura-alloue-plus-de-40-millions-deuros-de-credits-europeens-2060546'
+                      )}`
                     )
                   }}
                 >
@@ -522,8 +539,10 @@ export default function Home() {
                 <div
                   className="max-w-sm rounded overflow-hidden shadow-lg cursor-pointer"
                   onClick={() => {
-                    predict(
-                      'https://www.lejournaldesentreprises.com/ille-et-vilaine/breve/le-roy-logistique-agrandit-sa-surface-logistique-en-gironde-2060446'
+                    router.push(
+                      `/?url=${encodeURIComponent(
+                        'https://www.lejournaldesentreprises.com/ille-et-vilaine/breve/le-roy-logistique-agrandit-sa-surface-logistique-en-gironde-2060446'
+                      )}`
                     )
                   }}
                 >
@@ -543,8 +562,10 @@ export default function Home() {
                 <div
                   className="max-w-sm rounded overflow-hidden shadow-lg cursor-pointer"
                   onClick={() => {
-                    predict(
-                      'https://www.lejournaldesentreprises.com/region-sud/breve/david-gesbert-est-le-nouveau-directeur-deurecom-1763860'
+                    router.push(
+                      `/?url=${encodeURIComponent(
+                        'https://www.lejournaldesentreprises.com/region-sud/breve/david-gesbert-est-le-nouveau-directeur-deurecom-1763860'
+                      )}`
                     )
                   }}
                 >
