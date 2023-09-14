@@ -99,7 +99,7 @@ def get_zeste_predictions(text):
             'accept': 'application/json',
         },
         json={
-            "labels": ["rachat", "bienfaisance", "implantation", "passation", "banqueroute", "fermeture", "recrutement", "territoire", "investissement", "innovation", "acquisition"],
+            "labels": zeste_config['classes'],
             "language": "fr",
             "text": text,
             "explain": False,
